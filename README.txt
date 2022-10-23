@@ -6,4 +6,4 @@ The following are the codes  to generate the kernel density as predicted by EFNK
 
 EFNKDE_Code_Mathematica.nb is written in Mathematica.
 EFNKDE_Code_Python.py is written in Python.
-EFNKDE_Code_R.EXTENSION is written in R.
+EFNKDE_Code_R.R is written in R.
