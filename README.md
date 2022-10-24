@@ -6,6 +6,6 @@ Fish_Data.csv contains 25 point fish data captured as Video S1 (also see Video_S
 
 The following are the codes  to generate the kernel density as predicted by EFNKDE. More details are in the beginning of the respective files.
 
-`EFNKDE_Code_Mathematica.nb` is written in Mathematica.
-`EFNKDE_Code_Python.py` is written in Python.
-`EFNKDE_Code_R.R` is written in R.
+`EFNKDE_Code_Mathematica.txt` is written in **Mathematica** (the contents of which can be copied to a mathematica notebook file.)
+`EFNKDE_Code_Python.py` is written in **Python**.
+`EFNKDE_Code_R.R` is written in **R**.
