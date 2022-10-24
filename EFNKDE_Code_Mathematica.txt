@@ -1,0 +1,105 @@
+(*
+About the Code
+
+"PointArr" is the array carrying the input data (spatial distribution of points). The same used in the code below is only a place holder and does not correspond to the data used in the paper for generating any of the graphs.
+If the data is given in terms of latitudes and longitudes, then a conversion to 2D Cartesian form is needed before using the below code.
+If there are forbidden regions, then the corners of the polygon mentioned in Section 9 of the manuscript are to be entered in "BoundaryArray". If there are no forbidden regions, then uncomment the line "BoundaryArray={};" in the code below.
+The function EFNKDE[x, y, BW] returns K(x, y) with bandwidth BW.
+
+
+Code
+
+*)
+
+PointArr = {{4.17, 4.29}, {4.22, 9.19}, {-6.94, 2.41}, {-7.18, 5.15}, {-2.78, 1.56}, {-5.31, 0.04}, {3.37, 9.44}};
+
+BoundaryArray = {{-2.0, -2.0}, {2.0, -2.0}, {2.0, 2.0}, {-2.0, 2.0}};
+(*BoundaryArray={};*)
+
+nPArr = Length[PointArr];
+DelaunayTriangulatePlot = DelaunayMesh[PointArr];
+AllEdgeList1 = MeshCells[DelaunayTriangulatePlot, 1][[All, 1]];
+
+FindabcGivenPts[x1_, y1_, x2_, y2_] = {y2 - y1, x1 - x2, (x2 - x1) y2 + (y1 - y2) x2};
+FindIntrsctnPtGivenLines[a1_, b1_, c1_, a2_, b2_, c2_] = {(b2 c1 - b1 c2)/(a2 b1 - a1 b2), (a1 c2 - a2 c1)/(a2 b1 - a1 b2)};
+FindIfPtInt[PtA_, PtB_, PtX_] := Module[{xA, xB, xX, yA, yB, yX, \[Alpha]IntExt, IntAns},
+   xA = PtA[[1]];
+   xB = PtB[[1]];
+   xX = PtX[[1]];
+   yA = PtA[[2]];
+   yB = PtB[[2]];
+   yX = PtX[[2]];
+   If[xA == xB, \[Alpha]IntExt = (yX - yA)/(yB - yA), \[Alpha]IntExt = (xX - xA)/(xB - xA)];
+   If[(\[Alpha]IntExt > 0) && (\[Alpha]IntExt < 1), IntAns = 1, IntAns = 0];
+   IntAns
+   ];
+
+RemoveOverlapWithBoundary[BArr_] := 
+   Module[{NB, BArrTmp, RemoveCrossTalksArr, iK, Edgeval, a, b, Coorda, Coordb, iB, Coordc, Coordd, abcEdge, abcBoundary, IntPt},
+   BArrTmp = BArr;
+   NB = Length[BArr];
+   AppendTo[BArrTmp, BArr[[1]]];
+   RemoveCrossTalksArr = {};
+   
+   For[iK = 1, iK <= Length[AllEdgeList1], iK++,
+    Edgeval = AllEdgeList1[[iK]];
+    a = Edgeval[[1]];
+    b = Edgeval[[2]];
+    Coorda = PointArr[[a]];
+    Coordb = PointArr[[b]];
+    abcEdge = FindabcGivenPts[Coorda[[1]], Coorda[[2]], Coordb[[1]], Coordb[[2]]];
+    
+    For[iB = 1, iB <= NB, iB++,
+     Coordc = BArrTmp[[iB]];
+     Coordd = BArrTmp[[iB + 1]];
+     abcBoundary = FindabcGivenPts[Coordc[[1]], Coordc[[2]], Coordd[[1]], Coordd[[2]]];
+     IntPt = FindIntrsctnPtGivenLines[abcEdge[[1]], abcEdge[[2]], abcEdge[[3]], abcBoundary[[1]], abcBoundary[[2]], 
+       abcBoundary[[3]]];
+     If[(FindIfPtInt[Coorda, Coordb, IntPt] == 1) && (FindIfPtInt[Coordc, Coordd, IntPt] == 1),
+      AppendTo[RemoveCrossTalksArr, Edgeval];
+      iB = NB + 10;
+      ];
+     ];
+    ];
+   AllEdgeList1 = Complement[AllEdgeList1, RemoveCrossTalksArr];
+   ];
+
+If[Length[BoundaryArray] > 0, RemoveOverlapWithBoundary[BoundaryArray]];
+
+nAllEdgeList1 = Length[AllEdgeList1];
+
+IntInfoGivenEdgePT[x_, y_, iEdge_] := 
+   Module[{PtX, ipta, iptb, Pta, Ptb, VXma, VXmb, Vbma, VXmaDOTVbma, VXmbDOTVamb, FootOfThePerpendicular, LengthOfPerp, yA, yB},
+   PtX = {x, y};
+   ipta = AllEdgeList1[[iEdge, 1]];
+   iptb = AllEdgeList1[[iEdge, 2]];
+   Pta = PointArr[[ipta]];
+   Ptb = PointArr[[iptb]];
+   VXma = PtX - Pta;
+   VXmb = PtX - Ptb;
+   Vbma = Ptb - Pta;
+   VXmaDOTVbma = VXma . Vbma;
+   VXmbDOTVamb = VXmb . (-Vbma);
+   FootOfThePerpendicular = Pta + VXmaDOTVbma/Vbma . Vbma Vbma;
+   LengthOfPerp = Norm[PtX - FootOfThePerpendicular];
+   If[VXmaDOTVbma <= 0, yA = Norm[Pta - FootOfThePerpendicular]];
+   If[VXmbDOTVamb <= 0, yA = Norm[Ptb - FootOfThePerpendicular]];
+   If[(VXmaDOTVbma > 0) && (VXmbDOTVamb > 0), yA = -Norm[Pta - FootOfThePerpendicular]];
+   yB = yA + Norm[Vbma];
+   {LengthOfPerp, yA, yB}
+   ];
+
+PartialEFNKDE[x_, y_, BW_, iEdgeEF_] := Module[{IntInfoval, sval, yAval, yBval, LEdgeval, Expval, Denomval, erfsval, AnsvalEF},
+   IntInfoval = IntInfoGivenEdgePT[x, y, iEdgeEF];
+   sval = IntInfoval[[1]];
+   yAval = IntInfoval[[2]];
+   yBval = IntInfoval[[3]];
+   LEdgeval = yBval - yAval;
+   Expval = Exp[-(1/2) (sval/BW)^2];
+   Denomval = 2 Sqrt[2 \[Pi]] nAllEdgeList1 BW LEdgeval;
+   erfsval = Erf[yBval/(Sqrt[2] BW)] - Erf[yAval/(Sqrt[2] BW)];
+   AnsvalEF = (Expval*erfsval)/Denomval;
+   AnsvalEF
+   ];
+
+EFNKDE[x_, y_, BW_] := Sum[PartialEFNKDE[x, y, BW, j], {j, 1, nAllEdgeList1}];
