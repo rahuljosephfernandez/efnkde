@@ -1,6 +1,6 @@
 # "PointArr" is the array carrying the input data (spatial distribution of points). The same used in the code below is only a place holder and does not correspond to the data used in the paper for generating any of the graphs.
 # If the data is given in terms of latitudes and longitudes, then a conversion to 2D Cartesian form is needed before using the below code.
-# If there are forbidden regions, then the corners of the polygon mentioned in Section 9 of the manuscript are to be entered in "BoundaryArray". If there are no forbidden regions, then uncomment the line "BoundaryArray = []" in the code below.
+# If there are forbidden regions, then the corners of the polygon are to be entered in "BoundaryArray". If there are no forbidden regions, then uncomment the line "BoundaryArray = []" in the code below.
 # The function EFNKDE(x,y,BW) returns K(x, y) with bandwidth BW.
 
 import numpy as np
